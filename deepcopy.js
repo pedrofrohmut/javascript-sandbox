@@ -6,6 +6,11 @@
 // reference type.
 const isPrimitive = (val) => val !== Object(val);
 
+// Returns a real copy (also called deep copy) of the values passed
+// The reason for doing this is beacuse javascript copying with spread operator
+// copies only primitive data, other than this it copy the reference an not the
+// object. Like arrays and objects you will hava the same reference so that you
+// will at end not having a real copy.
 const deepCopy = (obj) => {
   // Primitive data doesnt pass through reference so you can just return the value
   if (isPrimitive(obj)) {
@@ -23,16 +28,25 @@ const deepCopy = (obj) => {
   }
 
   // Objects
-  const copy = Object.assign({}, obj);
-  const entries = Object.entries(copy);
-
-  // TODO: change this 4 lines to use Array.reduce() 
-  // Object.fromEntries() doesnt work on nodejs
-  const mappedEntries = entries.map( ([key, value]) => [key, deepCopy(value)] );
-  const map = new Map(mappedEntries);
-  const result = Object.fromEntries(map);
-  return result;
+  const objectCopy = Object.assign({}, obj);
+  return newObjectFromEntries(Object.entries(objectCopy));
 }
+
+// There is no Object.fromEntries() for node
+// this function is just for compatibility with backend javascript
+const newObjectFromEntries = (entries) => (
+  // entries pattern: [ [key, value], [key, value], ... ]
+  entries.reduce(
+    (acc, curr) =>  {
+      const key = curr[0];
+      const value = curr[1];
+      // Accumulate the new key/value to the final object
+      acc[key] = deepCopy(value);
+      return acc;
+    }, 
+    {}
+  )
+);
 
 //### TESTS ###
 
@@ -142,8 +156,33 @@ if (objArrs.arr1 === objArrsCopy.arr1) {
   throw new Error("Not copying arrays inside objects the right way.");
 }
 
-// TODOISH: make more complicated tests
+const objObjs = { 
+  obj1: { foo: "bar" }, 
+  obj2: { name: "John", age: 30 }, 
+  obj3: { name: "Sarah", address: { street: "3rd Street", state: "Sao Paulo" } } 
+}
+const objObjsCopy = deepCopy(objObjs)
+if (objObjs === objObjsCopy) {
+  throw new Error("Not copy simple objects the right way.");
+}
 
+if (objObjs.obj1 === objObjsCopy.obj1) {
+  throw new Error("Not copy objects inside objects the right way.");
+}
+
+if (objObjs.obj2 === objObjsCopy.obj2) {
+  throw new Error("Not copy objects inside objects the right way.");
+}
+
+if (objObjs.obj3 === objObjsCopy.obj3) {
+  throw new Error("Not copy objects inside objects the right way.");
+}
+
+if (objObjs.obj3.address === objObjsCopy.obj3.address) {
+  throw new Error("Not copy objects inside objects inside objects the right way.");
+}
+
+// TODOISH: make more complicated tests
 //##############################################################################
 
 console.log("Every thing is all right Sir.");
